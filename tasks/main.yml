@@ -1,0 +1,82 @@
+---
+
+- name: install java
+  apt:
+    name: default-jre-headless
+    state: present
+    update_cache: True
+    cache_valid_time: 3600
+
+- name: create minecraft user group
+  group:
+    name: minecraft
+    state: present
+
+- name: create service user for minecraft
+  user:
+    name: minecraft
+    shell: /bin/bash
+    comment: Minecraft Game Server User
+    group: minecraft
+
+- name: create minecraft server location
+  file:
+    path: /opt/minecraft
+    state: directory
+    owner: minecraft
+    group: minecraft
+
+- name: download latest minecraft server
+  get_url:
+    dest: /opt/minecraft/server.jar
+    url: https://serverjars.com/api/fetchJar/spigot
+    owner: minecraft
+    group: minecraft
+    force: True
+
+- name: Accept Minecraft EULA
+  copy:
+    dest: /opt/minecraft/eula.txt
+    content: "eula=true"
+    owner: minecraft
+    group: minecraft
+
+- name: Create plugins folder
+  file:
+    path: /opt/minecraft/plugins
+    state: directory
+    owner: minecraft
+    group: minecraft
+
+- name: Install ZabbixGot Plugin
+  get_url:
+    url: https://github.com/HimaJyun/Zabbigot/releases/download/1.4.0/Zabbigot-1.4.0.jar
+    dest: /opt/minecraft/plugins/
+    owner: minecraft
+    group: minecraft
+
+- name: Create ZabbixGot Config dir
+  file:
+    path: /opt/minecraft/plugins/Zabbigot
+    state: directory
+    owner: minecraft
+    group: minecraft
+
+- name: copy zabbigot config
+  template:
+    src: zabbigot-config.yml.j2
+    dest: /opt/minecraft/plugins/Zabbigot/config.yml
+    owner: minecraft
+    group: minecraft
+
+- name: install systemd service for minecraft
+  template:
+    dest: /etc/systemd/system/minecraft.service
+    src: systemd-minecraft.service.j2
+
+- name: Enable and start minecraft server
+  systemd:
+    name: minecraft
+    state: restarted
+    daemon_reload: True
+    enabled: True

@@ -1,0 +1,29 @@
+[Unit]
+Description=Minecraft Server
+After=syslog.target network.target
+
+[Service]
+# Ensure to set the correct user and working directory (installation directory of your server) here
+User=minecraft
+WorkingDirectory=/opt/minecraft
+
+# You can customize the maximum amount of memory as well as the JVM flags here
+ExecStart=/usr/bin/screen -DmS minecraft-server /usr/bin/java -XX:+UseG1GC -Xmx{{ (ansible_memtotal_mb * 0.75)|round|int }}M -jar server.jar nogui
+ExecStop=/usr/bin/screen -p 0 -S minecraft -X eval 'stuff "say SERVER SHUTTING DOWN. Saving map..."\\015'
+ExecStop=/usr/bin/screen -p 0 -S minecraft -X eval 'stuff "save-all"\\015'
+ExecStop=/usr/bin/screen -p 0 -S minecraft -X eval 'stuff "stop"\\015'
+ExecStop=/bin/sleep 10
+
+# Restart the server when it is stopped or crashed after 30 seconds
+# Comment out RestartSec if you want to restart immediately
+Restart=always
+RestartSec=30
+
+# Alternative: Restart the server only when it stops regularly
+# Restart=on-success
+
+# Do not remove this!
+StandardInput=null
+
+[Install]
+WantedBy=multi-user.target
